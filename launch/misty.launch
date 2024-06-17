@@ -1,0 +1,51 @@
+<launch>
+    <!-- <arg name="robot_ip" default=""/> -->
+
+    <!-- for demo'ing -->
+    <arg name="robot_ip" value="192.168.1.125"/>
+    
+    <arg name="robot_id" default="0"/>
+    <arg name="robot_ip_is_set" value="$(eval false if (arg('robot_ip') == '') else true)"/>
+    <arg name="use_av_stream" default="true"/>
+    <arg name="demo_mode" default="false"/>
+    <arg name="use_google_tts" default="true"/>
+    <arg name="google_auth_path" default="$(find ros_speech2text)/ros-speech2text-google-stt-cred.json"/>
+    
+    <param name="/misty/id_$(arg robot_id)/robot_ip" type="string" value="$(arg robot_ip)"/>
+
+    <group unless="$(arg robot_ip_is_set)">
+        <node pkg="misty_wrapper" type="misty_find_ip_ros.py" name="misty_find_ip_ros_$(arg robot_id)">
+            <param name="robot_id" value="$(arg robot_id)"/>
+        </node>
+    </group>
+
+    <node pkg="misty_wrapper" type="misty_ROS.py" name="misty_ROS_$(arg robot_id)" output="screen">
+        <param name="use_google_tts" value="$(arg use_google_tts)"/>
+    </node>
+
+    <group if="$(arg use_av_stream)">
+        <node pkg="misty_wrapper" type="misty_AV.py" name="misty_AV_$(arg robot_id)">
+            <rosparam param="stream_resolution">
+                W : 640
+                H : 480
+            </rosparam>
+        </node>
+        <!-- <node name="image_view_misty_$(arg robot_id)" pkg="image_view" type="image_view" respawn="false" output="log">
+            <remap from="image" to="/misty/id_$(arg robot_id)/camera"/>
+            <param name="autosize" value="true" />
+        </node> -->
+    </group>
+
+    <group if="$(arg use_google_tts)">
+        <include file="$(find google_tts)/launch/google_tts.launch">
+            <arg name="google_auth_path" value="$(arg google_auth_path)"/>
+        </include>
+    </group>
+
+    <group if="$(arg demo_mode)">
+        <node pkg="misty_wrapper" type="demo.py" name="misty_demo_$(arg robot_id)"/>
+    </group>
+
+
+
+</launch>
